@@ -57,15 +57,20 @@ fi
 # 4. Update apt & install Apache2 and PHP 8.3
 echo -e "\n${YELLOW}▶ [2/6] Setting up Apache2 & PHP 8.3 (including PHP 8.3.33)...${NC}"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -y -qq
-apt-get install -y -qq software-properties-common ca-certificates lsb-release apt-transport-https curl
 
-# Add Ondřej Surý PHP repository on Ubuntu if needed
+# Update apt repositories (continue even if an unrelated 3rd party PPA has issues)
+apt-get update -y -qq || true
+apt-get install -y -qq software-properties-common ca-certificates lsb-release apt-transport-https curl || true
+
+# Add Ondřej Surý PHP repository on Ubuntu if needed (Ubuntu 24.04 'noble' includes PHP 8.3 natively)
 if [ -f /etc/lsb-release ] || grep -qi ubuntu /etc/os-release 2>/dev/null; then
-  if ! grep -q "ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
-    echo "   Adding PHP repository (ppa:ondrej/php)..."
-    add-apt-repository ppa:ondrej/php -y >/dev/null 2>&1 || true
-    apt-get update -y -qq
+  UBUNTU_CODENAME=$(lsb_release -cs 2>/dev/null || echo "")
+  if [ "$UBUNTU_CODENAME" != "noble" ]; then
+    if ! grep -q "ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+      echo "   Adding PHP repository (ppa:ondrej/php)..."
+      add-apt-repository ppa:ondrej/php -y >/dev/null 2>&1 || true
+      apt-get update -y -qq || true
+    fi
   fi
 fi
 
@@ -106,12 +111,14 @@ if [ ! -d "$PROJECT_DIR/dist" ]; then
 fi
 echo -e "   ${GREEN}✓ Build succeeded: $PROJECT_DIR/dist generated.${NC}"
 
-# 6. Configure Apache VirtualHost
-echo -e "\n${YELLOW}▶ [4/6] Configuring Apache VirtualHost...${NC}"
+# 6. Configure Apache VirtualHost (000- prefix ensures it is the default site)
+echo -e "\n${YELLOW}▶ [4/6] Configuring Apache VirtualHost as primary site...${NC}"
 
-cat > /etc/apache2/sites-available/savannah.conf <<EOF
+cat > /etc/apache2/sites-available/000-savannah.conf <<EOF
 # Apache2 VirtualHost for Savannah CRM
 <VirtualHost *:80>
+    ServerName localhost
+    ServerAlias 127.0.0.1 crm.local *
     ServerAdmin webmaster@localhost
     DocumentRoot $PROJECT_DIR/dist
 
@@ -149,10 +156,11 @@ EOF
 echo "ServerName 127.0.0.1" > /etc/apache2/conf-available/fqdn.conf 2>/dev/null || true
 a2enconf fqdn >/dev/null 2>&1 || true
 
-# Enable essential modules & activate site
+# Enable essential modules & activate primary site
 a2enmod rewrite headers deflate expires php8.3 >/dev/null 2>&1 || a2enmod rewrite headers deflate expires >/dev/null 2>&1 || true
-a2dissite 000-default.conf >/dev/null 2>&1 || true
-a2ensite savannah.conf >/dev/null 2>&1
+# Disable conflicting default sites so Savannah CRM takes precedence
+a2dissite 000-default.conf crm.conf savannah.conf >/dev/null 2>&1 || true
+a2ensite 000-savannah.conf >/dev/null 2>&1
 
 # 7. Set file permissions & ownership
 echo -e "\n${YELLOW}▶ [5/6] Setting directory ownership & file permissions...${NC}"

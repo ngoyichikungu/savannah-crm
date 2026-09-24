@@ -105,10 +105,10 @@ sudo mkdir -p database storage/logs storage/framework/{cache,sessions,views} boo
 sudo chown -R www-data:www-data /var/www/html/crm
 sudo chmod -R 775 database storage bootstrap/cache
 
-# 7. Configure Apache VirtualHost (update DocumentRoot to /var/www/html/crm/dist)
-sudo cp deploy/apache2.conf /etc/apache2/sites-available/savannah.conf
-sudo a2dissite 000-default.conf
-sudo a2ensite savannah.conf
+# 7. Configure Apache VirtualHost as primary default site
+sudo cp deploy/apache2.conf /etc/apache2/sites-available/000-savannah.conf
+sudo a2dissite 000-default.conf crm.conf savannah.conf
+sudo a2ensite 000-savannah.conf
 sudo apache2ctl configtest
 sudo systemctl restart apache2
 ```
