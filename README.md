@@ -50,7 +50,30 @@ docker-compose up -d --build
 # 4. Access the web installer at http://localhost:3000/install
 ```
 
-### Path 2: Plain VPS (Ubuntu / Debian / Apache2 with PHP 8.3.33)
+### Path 2: Plain VPS (Ubuntu / Debian / Apache2 with PHP 8.3)
+
+#### ⚡ Quick Option: 1-Command Automated Installer (Recommended)
+Simply navigate into your project directory (e.g. `/var/www/html/crm` or `/var/www/savannah-crm`) and run:
+
+```bash
+cd /var/www/html/crm   # or wherever you cloned the repo
+sudo bash install.sh
+```
+
+**What this automated script does for you:**
+1. Automatically detects your project directory (no manual path editing).
+2. Creates `.env` and all required writable directories (`database/`, `storage/`, `bootstrap/cache/`).
+3. Installs Apache2, PHP 8.3 (`libapache2-mod-php8.3` and extensions) & Node.js.
+4. Compiles the production assets (`npm run build` &rarr; generates `dist/`).
+5. Configures the Apache VirtualHost automatically pointing to your exact project path.
+6. Sets `www-data` ownership and `775` permissions.
+7. Tests configuration (`apache2ctl configtest`) and restarts Apache2.
+
+---
+
+#### 🛠️ Manual Step-by-Step Option (Advanced)
+
+If you prefer to run commands manually step-by-step:
 
 ```bash
 # 1. Update package lists and add PHP 8.3 repository (Ondřej Surý PPA)
@@ -68,30 +91,21 @@ sudo apt install -y apache2 libapache2-mod-php8.3 \
 
 # 3. Verify your installed PHP version matches 8.3.33
 php -v
-# Expected CLI output:
-# PHP 8.3.33 (cli) (built: ...) (NTS)
-# Zend Engine v4.3.33, Copyright (c) Zend Technologies
 
-# 4. Configure PHP 8.3 recommended limits in /etc/php/8.3/apache2/php.ini:
-# memory_limit = 256M
-# upload_max_filesize = 25M
-# post_max_size = 25M
-# max_execution_time = 120
-
-# 5. Enable Apache PHP 8.3 and essential production modules
+# 4. Enable Apache PHP 8.3 and essential production modules
 sudo a2enmod php8.3 rewrite headers deflate expires
 
-# 6. Clone repository & build production assets
-cd /var/www/savannah-crm
+# 5. Clone repository, create environment & build production assets
+cd /var/www/html/crm
 cp .env.example .env
 npm install && npm run build
 
-# 7. Ensure writable directories exist, then set ownership and permissions
+# 6. Ensure writable directories exist, then set ownership and permissions
 sudo mkdir -p database storage/logs storage/framework/{cache,sessions,views} bootstrap/cache
-sudo chown -R www-data:www-data /var/www/savannah-crm
+sudo chown -R www-data:www-data /var/www/html/crm
 sudo chmod -R 775 database storage bootstrap/cache
 
-# 8. Configure Apache VirtualHost & activate site
+# 7. Configure Apache VirtualHost (update DocumentRoot to /var/www/html/crm/dist)
 sudo cp deploy/apache2.conf /etc/apache2/sites-available/savannah.conf
 sudo a2dissite 000-default.conf
 sudo a2ensite savannah.conf
