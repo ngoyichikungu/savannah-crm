@@ -1,0 +1,6 @@
+{
+  "name": "Savannah CRM",
+  "description": "A multi-company business operations app for SMEs covering CRM, quotations, proposals, invoices, receipts, sales and marketing tracking, and reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

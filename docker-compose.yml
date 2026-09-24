@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  savannah-crm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: savannah_crm_app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - APP_NAME=Savannah CRM & Operations
+      - APP_ENV=production
+      - APP_KEY=base64:7K0mQx1sL29p3r4t5u6v7w8x9y0z1a2b3c4d5e6f7g8=
+      - DB_CONNECTION=mysql
+      - DB_HOST=127.0.0.1
+      - DB_PORT=3306
+      - DB_DATABASE=savannah_crm
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+    volumes:
+      # CRITICAL: Persistent volume mount for MySQL database and uploaded attachments.
+      - savannah_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  savannah_data:
+    name: savannah_crm_mysql_data

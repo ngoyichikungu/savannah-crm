@@ -1,0 +1,5 @@
+# Savannah CRM Automated Cron Schedule & Daily Backup
+# Place in /etc/cron.d/savannah-crm or crontab -e for www-data user
+
+* * * * * www-data cd /var/www/savannah-crm && php artisan schedule:run >> /dev/null 2>&1
+0 2 * * * www-data cd /var/www/savannah-crm && php artisan app:backup >> /var/log/savannah-backup.log 2>&1

@@ -1,0 +1,14 @@
+[Unit]
+Description=Savannah CRM Background Queue Worker
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/savannah-crm
+ExecStart=/usr/bin/php /var/www/savannah-crm/artisan queue:work --tries=3 --timeout=90
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
