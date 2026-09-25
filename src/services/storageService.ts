@@ -22,7 +22,37 @@ import {
 } from '../types';
 import { InvoiceStatusResolver } from './invoiceStatusResolver';
 
-const STORAGE_KEY = 'savannah_crm_db_v1';
+const BASE_STORAGE_KEY = 'savannah_crm_db_v1';
+
+export function getCurrentInstanceId(): string {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const urlInstance = params.get('instance');
+    if (urlInstance && urlInstance.trim()) {
+      return urlInstance.trim().toLowerCase();
+    }
+
+    const localInstance = localStorage.getItem('savannah_active_instance_id');
+    if (localInstance && localInstance.trim()) {
+      return localInstance.trim().toLowerCase();
+    }
+  }
+
+  const envInstance = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_INSTANCE_ID;
+  if (envInstance && typeof envInstance === 'string' && envInstance.trim()) {
+    return envInstance.trim().toLowerCase();
+  }
+
+  return 'default';
+}
+
+export function getStorageKey(instanceId?: string): string {
+  const targetId = instanceId || getCurrentInstanceId();
+  if (!targetId || targetId === 'default') {
+    return BASE_STORAGE_KEY;
+  }
+  return `savannah_crm_db_${targetId}_v1`;
+}
 
 export interface AppDatabase {
   companies: Company[];
@@ -1337,8 +1367,49 @@ export class StorageService {
     return this.db!;
   }
 
+  static getStorageKey(): string {
+    return getStorageKey();
+  }
+
+  static getInstanceId(): string {
+    return getCurrentInstanceId();
+  }
+
+  static setInstanceId(id: string): void {
+    if (typeof localStorage !== 'undefined') {
+      if (id && id !== 'default') {
+        localStorage.setItem('savannah_active_instance_id', id);
+      } else {
+        localStorage.removeItem('savannah_active_instance_id');
+      }
+    }
+    this.db = null;
+    this.load();
+    this.notify();
+  }
+
+  static listKnownInstances(): string[] {
+    const instances = new Set<string>();
+    instances.add('default');
+    if (typeof localStorage !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          if (key === 'savannah_crm_db_v1') {
+            instances.add('default');
+          } else if (key.startsWith('savannah_crm_db_') && key.endsWith('_v1')) {
+            const inst = key.replace('savannah_crm_db_', '').replace('_v1', '');
+            if (inst) instances.add(inst);
+          }
+        }
+      }
+    }
+    return Array.from(instances);
+  }
+
   private static load(): void {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    const currentKey = this.getStorageKey();
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(currentKey) : null;
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
@@ -1398,14 +1469,14 @@ export class StorageService {
 
   static save(): void {
     if (this.db && typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.db));
+      localStorage.setItem(this.getStorageKey(), JSON.stringify(this.db));
     }
     this.notify();
   }
 
   static resetToDefault(): void {
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(this.getStorageKey());
     }
     this.db = null;
     this.load();

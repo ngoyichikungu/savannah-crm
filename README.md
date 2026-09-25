@@ -52,22 +52,37 @@ docker-compose up -d --build
 
 ### Path 2: Plain VPS (Ubuntu / Debian / Apache2 with PHP 8.3)
 
-#### ⚡ Quick Option: 1-Command Automated Installer (Recommended)
-Simply navigate into your project directory (e.g. `/var/www/html/crm` or `/var/www/savannah-crm`) and run:
+#### ⚡ 1-Command Automated Multi-Instance Installer (Recommended)
+Navigate into your project directory and run the setup wizard:
 
 ```bash
 cd /var/www/html/crm   # or wherever you cloned the repo
 sudo bash install.sh
 ```
 
-**What this automated script does for you:**
-1. Automatically detects your project directory (no manual path editing).
-2. Creates `.env` and all required writable directories (`database/`, `storage/`, `bootstrap/cache/`).
-3. Installs Apache2, PHP 8.3 (`libapache2-mod-php8.3` and extensions) & Node.js.
-4. Compiles the production assets (`npm run build` &rarr; generates `dist/`).
-5. Configures the Apache VirtualHost automatically pointing to your exact project path.
-6. Sets `www-data` ownership and `775` permissions.
-7. Tests configuration (`apache2ctl configtest`) and restarts Apache2.
+**The wizard allows you to:**
+1. **Set up a single default instance** OR **deploy multiple isolated instances** on the exact same server.
+2. Enter custom variables for each instance:
+   - **Instance Identifier** (`crm1`, `crm2`, `kitwe`, etc.)
+   - **Routing Strategy**: Dedicated port (`8080`, `8081`, `8082`) or custom subdomains (`crm1.yourdomain.com`).
+   - **Database Isolation**: Dedicated MySQL database name per instance (e.g. `savannah_crm1`, `savannah_crm2`) with **zero clash**.
+   - **Target Directory**: Easily clone or deploy to separate paths (e.g. `/var/www/html/crm2`).
+3. Automatically configure Apache VirtualHosts (`/etc/apache2/sites-available/savannah-<id>.conf`) without overwriting or interfering with existing instances.
+4. Auto-generate distinct cryptographic `APP_KEY` values and isolated `.env` files.
+
+#### Multi-Instance CLI Shortcuts:
+```bash
+# List all configured instances, ports, and databases on this server
+sudo bash install.sh --list
+
+# Unattended non-interactive install of Instance #2 on Port 8081
+sudo bash install.sh --instance-id=crm2 --port=8081 --dir=/var/www/html/crm2 --db-name=savannah_crm2 -y
+
+# Disable an instance VirtualHost safely
+sudo bash install.sh --remove=crm2
+```
+
+For complete documentation on running multiple tenants and multi-branch architectures on one server, see [docs/MULTI_INSTANCE_SETUP.md](docs/MULTI_INSTANCE_SETUP.md).
 
 ---
 

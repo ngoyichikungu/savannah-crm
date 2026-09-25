@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { InstallerService, RequirementCheck, InstallationConfig } from '../../services/installerService';
+import { StorageService } from '../../services/storageService';
 import { Company, User } from '../../types';
 import {
   CheckCircle2,
@@ -30,6 +31,7 @@ export const InstallerWizard: React.FC<InstallerWizardProps> = ({
   );
 
   // Form State
+  const [instanceId, setInstanceId] = useState(() => StorageService.getInstanceId());
   const [ownerName, setOwnerName] = useState('Chikungu Ngoyi');
   const [ownerEmail, setOwnerEmail] = useState('owner@savannah.co.zm');
   const [companyName, setCompanyName] = useState('Savannah Enterprises Ltd');
@@ -256,9 +258,14 @@ export const InstallerWizard: React.FC<InstallerWizardProps> = ({
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-xs text-emerald-950">
               <Database className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold">MySQL Persistence Engine</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">MySQL Engine &amp; Multi-Instance Isolation</span>
+                  <span className="font-mono text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold uppercase">
+                    Instance: {instanceId}
+                  </span>
+                </div>
                 <p className="text-stone-700 mt-0.5">
-                  MySQL database connection <code className="font-mono bg-emerald-100/80 px-1 py-0.5 rounded font-bold">savannah_crm</code> will be initialized with full schema migrations and core seed data.
+                  Database <code className="font-mono bg-emerald-100/80 px-1 py-0.5 rounded font-bold">savannah_{instanceId === 'default' ? 'crm' : instanceId}</code> is fully isolated. No clash occurs with any other instances on this server.
                 </p>
               </div>
             </div>
@@ -323,6 +330,22 @@ export const InstallerWizard: React.FC<InstallerWizardProps> = ({
                     onChange={(e) => setOwnerEmail(e.target.value)}
                     className="w-full text-xs p-2 bg-white rounded-lg border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-800"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-stone-700 mb-1">Instance Identifier (Slug)</label>
+                  <input
+                    type="text"
+                    value={instanceId}
+                    onChange={(e) => {
+                      const slug = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                      setInstanceId(slug);
+                      StorageService.setInstanceId(slug);
+                    }}
+                    className="w-full text-xs p-2 bg-white rounded-lg border border-stone-300 font-mono focus:outline-none focus:ring-1 focus:ring-stone-800"
+                    placeholder="e.g. crm1, crm2"
+                  />
+                  <span className="text-[10px] text-stone-500">Isolates data storage from other instances on this host.</span>
                 </div>
               </div>
 

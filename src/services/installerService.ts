@@ -31,8 +31,6 @@ export interface InstallationResult {
 }
 
 export class InstallerService {
-  private static STORAGE_MARKER = 'savannah_installed_marker';
-
   /**
    * Checks system requirements for running Savannah CRM.
    */
@@ -123,12 +121,17 @@ export class InstallerService {
     return checks;
   }
 
+  private static getMarkerKey(): string {
+    const inst = StorageService.getInstanceId();
+    return inst === 'default' ? 'savannah_installed_marker' : `savannah_installed_marker_${inst}`;
+  }
+
   /**
    * Checks if installation marker is present.
    */
   public static isInstalled(): boolean {
     if (typeof localStorage === 'undefined') return true;
-    return localStorage.getItem(this.STORAGE_MARKER) === 'true';
+    return localStorage.getItem(this.getMarkerKey()) === 'true';
   }
 
   /**
@@ -136,10 +139,11 @@ export class InstallerService {
    */
   public static setInstalledMarker(installed: boolean = true): void {
     if (typeof localStorage !== 'undefined') {
+      const key = this.getMarkerKey();
       if (installed) {
-        localStorage.setItem(this.STORAGE_MARKER, 'true');
+        localStorage.setItem(key, 'true');
       } else {
-        localStorage.removeItem(this.STORAGE_MARKER);
+        localStorage.removeItem(key);
       }
     }
   }
