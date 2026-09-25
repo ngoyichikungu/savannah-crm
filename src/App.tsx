@@ -26,6 +26,7 @@ import { CalendarView } from './components/calendar/CalendarView';
 import { ReminderBanner } from './components/calendar/ReminderBanner';
 import { OperationsView } from './components/installer/OperationsView';
 import { CompanySettingsModal } from './components/common/CompanySettingsModal';
+import { SignOutBackupModal } from './components/auth/SignOutBackupModal';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 interface Toast {
@@ -71,6 +72,9 @@ export const App: React.FC = () => {
   // Company logo & branding modal state
   const [isCompanySettingsOpen, setIsCompanySettingsOpen] = useState(false);
   const [companyModalMode, setCompanyModalMode] = useState<'manage' | 'create' | 'edit'>('manage');
+
+  // Sign Out & Backup Dialog state
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
 
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -413,9 +417,7 @@ export const App: React.FC = () => {
           setIsCompanySettingsOpen(true);
         }}
         onLogout={() => {
-          AuthService.logout();
-          setAuthUser(null);
-          showToast('Signed out of Savannah system.', 'info');
+          setIsSignOutModalOpen(true);
         }}
         onSwitchCompany={(id) => {
           StorageService.setCurrentCompany(id);
@@ -621,6 +623,8 @@ export const App: React.FC = () => {
               setActiveTab('payments');
               setSelectedPaymentId(id);
             }}
+            onRefreshData={loadData}
+            onShowToast={showToast}
           />
         )}
 
@@ -758,6 +762,25 @@ export const App: React.FC = () => {
           }}
         />
       )}
+
+      {/* Sign Out & Data Protection Dialog */}
+      <SignOutBackupModal
+        isOpen={isSignOutModalOpen}
+        onClose={() => setIsSignOutModalOpen(false)}
+        onConfirmSignOut={(backedUp) => {
+          setIsSignOutModalOpen(false);
+          AuthService.logout();
+          setAuthUser(null);
+          showToast(
+            backedUp
+              ? 'Backup archive downloaded. Signed out securely.'
+              : 'Signed out of Savannah system.',
+            'info'
+          );
+        }}
+        userName={authUser?.name}
+        companyName={currentCompany?.name}
+      />
 
       {/* Toast Notifications */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm w-full pointer-events-none">

@@ -467,6 +467,22 @@ export const Header: React.FC<HeaderProps> = ({
                 );
               })}
             </div>
+
+            {/* Mobile Sign Out Button */}
+            {onLogout && (
+              <div className="pt-2 border-t border-stone-200">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer shadow-2xs"
+                >
+                  <LogOut className="w-4 h-4 text-rose-600" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
