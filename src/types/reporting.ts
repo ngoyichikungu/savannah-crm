@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { Company, LeadSource, LeadStatus, PaymentMethod } from './index';
 
 export type ReportId =
+  | 'profit-and-loss'
+  | 'tax-vat-summary'
   | 'leads-captured'
   | 'leads-contacted'
   | 'lead-progression'

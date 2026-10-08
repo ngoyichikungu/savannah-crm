@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Company } from '../../types';
-import { ALL_REPORTS, getReportById } from '../../services/reports';
+import { ALL_REPORTS, getReportById, profitAndLossReport } from '../../services/reports';
 import { ReportShell } from './ReportShell';
 import { Money } from '../../support/money';
 import {
@@ -17,15 +17,17 @@ import {
 
 interface ReportsDashboardProps {
   company: Company;
+  initialReportId?: string;
 }
 
-export const ReportsDashboard: React.FC<ReportsDashboardProps> = ({ company }) => {
-  const [activeReportId, setActiveReportId] = useState<string>('client-payments-balances');
+export const ReportsDashboard: React.FC<ReportsDashboardProps> = ({ company, initialReportId = 'profit-and-loss' }) => {
+  const [activeReportId, setActiveReportId] = useState<string>(initialReportId);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const activeReport = getReportById(activeReportId) || ALL_REPORTS[0];
 
   const reportIcons: Record<string, React.ReactNode> = {
+    'profit-and-loss': <TrendingUp className="w-4 h-4 text-emerald-700" />,
     'leads-captured': <Users className="w-4 h-4 text-blue-600" />,
     'leads-contacted': <PhoneCall className="w-4 h-4 text-indigo-600" />,
     'lead-progression': <TrendingUp className="w-4 h-4 text-emerald-600" />,
@@ -43,6 +45,43 @@ export const ReportsDashboard: React.FC<ReportsDashboardProps> = ({ company }) =
   // Custom KPI Renderers per report
   const renderCustomMetrics = (totals: any, _rows: any[]) => {
     if (!totals) return null;
+
+    if (activeReportId === 'profit-and-loss') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-xs">
+            <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Effective Turnover</span>
+            <div className="text-2xl font-bold font-mono text-emerald-800 mt-1">
+              {new Money(totals.effectiveRevenueMinor, company.currency_code).format()}
+            </div>
+            <span className="text-xs text-stone-400 mt-0.5">Basis: {totals.basis?.toUpperCase()}</span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-xs">
+            <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">Gross Profit</span>
+            <div className="text-2xl font-bold font-mono text-teal-900 mt-1">
+              {new Money(totals.grossProfitMinor, company.currency_code).format()}
+            </div>
+            <span className="text-xs text-teal-600 mt-0.5">Gross Margin: {totals.grossMarginPercent?.toFixed(1)}%</span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-xs">
+            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Operating Expenses</span>
+            <div className="text-2xl font-bold font-mono text-amber-900 mt-1">
+              {new Money(totals.totalOpexMinor, company.currency_code).format()}
+            </div>
+            <span className="text-xs text-amber-600 mt-0.5">COGS: {new Money(totals.totalCostOfSalesMinor, company.currency_code).format()}</span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-xs">
+            <span className="text-[11px] font-bold text-stone-600 uppercase tracking-wider">Net Profit / (Loss)</span>
+            <div className={`text-2xl font-bold font-mono mt-1 ${totals.netProfitMinor >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+              {new Money(totals.netProfitMinor, company.currency_code).format()}
+            </div>
+            <span className={`text-xs mt-0.5 ${totals.netProfitMinor >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              Net Margin: {totals.netMarginPercent?.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+      );
+    }
 
     if (activeReportId === 'leads-captured') {
       return (
@@ -282,9 +321,9 @@ export const ReportsDashboard: React.FC<ReportsDashboardProps> = ({ company }) =
           </div>
         </div>
 
-        {/* 8 Report Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-2 border-t border-stone-800">
-          {ALL_REPORTS.map((rep) => {
+        {/* Report Selector Tabs */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 pt-2 border-t border-stone-800">
+          {[profitAndLossReport, ...ALL_REPORTS].map((rep) => {
             const isSelected = activeReportId === rep.id;
             return (
               <button

@@ -5,6 +5,7 @@ import { ChartWrapper } from '../common/ChartWrapper';
 import { Money } from '../../support/money';
 import { CalendarReminderService } from '../../services/calendarReminderService';
 import { StorageService } from '../../services/storageService';
+import { AccountingService } from '../../services/accountingService';
 import {
   TrendingUp,
   AlertTriangle,
@@ -19,6 +20,9 @@ import {
   DollarSign,
   Activity,
   RefreshCw,
+  Receipt,
+  Plus,
+  Landmark,
 } from 'lucide-react';
 import { ChartData, ChartOptions } from 'chart.js';
 
@@ -63,6 +67,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const organisations = useMemo(() => StorageService.getOrganisations(), [currentCompany.id]);
   const orgMap = useMemo(() => new Map(organisations.map((o) => [o.id, o.name])), [organisations]);
+
+  const accountingSummary = useMemo(() => {
+    try {
+      const year = new Date().getFullYear();
+      const pnl = AccountingService.calculateProfitAndLoss(
+        currentCompany.id,
+        `${year}-01-01`,
+        `${year}-12-31`,
+        { basis: 'accrual', preset: 'this_year' }
+      );
+      const bills = AccountingService.getPurchaseInvoices({ companyId: currentCompany.id });
+      const unpaidBills = bills.filter((b) => b.status !== 'paid' && b.status !== 'cancelled');
+      const payablesDueMinor = unpaidBills.reduce((acc, b) => acc + b.balance_due_minor, 0);
+
+      const thisMonth = new Date().toISOString().substring(0, 7);
+      const expenses = AccountingService.getExpenses({ companyId: currentCompany.id });
+      const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
+      const monthExpensesMinor = monthExpenses.reduce((acc, e) => acc + e.amount_minor, 0);
+
+      return {
+        netProfitMinor: pnl.netProfitMinor,
+        grossMarginPct: pnl.grossMarginPercent,
+        payablesDueMinor,
+        unpaidBillsCount: unpaidBills.length,
+        monthExpensesMinor,
+        monthExpensesCount: monthExpenses.length,
+      };
+    } catch {
+      return null;
+    }
+  }, [currentCompany.id, referenceDate]);
 
   // Chart 1: Invoiced vs Received 12 Months (Line Chart)
   const lineChartData: ChartData = useMemo(() => {
@@ -290,6 +325,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <button
+            onClick={() => onNavigateTab('users')}
+            className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title="Manage team accounts, roles, access permissions, and passwords"
+          >
+            <Users className="w-3.5 h-3.5 text-indigo-700" />
+            <span className="hidden sm:inline">Team &amp; Users</span>
+          </button>
+
+          <button
             onClick={() => setReferenceDate(new Date().toISOString().substring(0, 10))}
             className="flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-semibold transition-colors"
             title="Refresh dashboard aggregation"
@@ -457,6 +501,129 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* COMMERCIAL ACCOUNTING & FINANCIAL HEALTH QUICK ACTIONS */}
+      {accountingSummary && (
+        <div className="bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-emerald-800/40">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+                <Landmark className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                    Small Business Accounting
+                  </span>
+                  <span className="text-xs text-stone-300 font-mono">• Fiscal Period Overview</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5">
+                  Profit &amp; Loss, Payables &amp; Operating Expenses
+                </h3>
+              </div>
+            </div>
+
+            {/* Quick Accounting Navigation Buttons */}
+            <div className="flex items-center flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onNavigateTab('pnl')}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>P&amp;L Statement</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('purchases')}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all border border-white/15 flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Capture Bill (AP)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('expenses')}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all border border-white/15 flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Receipt className="w-3.5 h-3.5 text-amber-300" />
+                <span>Record Expense</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-3 pt-1">
+            <div
+              onClick={() => onNavigateTab('pnl')}
+              className="bg-black/20 hover:bg-black/30 p-3 rounded-xl border border-white/5 transition-colors cursor-pointer group"
+            >
+              <div className="text-[11px] text-stone-300 font-medium flex items-center justify-between">
+                <span>Net Profit (YTD)</span>
+                <ChevronRight className="w-3 h-3 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+              <div
+                className={`text-lg sm:text-xl font-black font-mono mt-1 ${
+                  accountingSummary.netProfitMinor >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}
+              >
+                {new Money(accountingSummary.netProfitMinor, currency).format()}
+              </div>
+              <div className="text-[10px] text-stone-400 mt-1 font-mono">
+                Gross Margin: {accountingSummary.grossMarginPct.toFixed(1)}%
+              </div>
+            </div>
+
+            <div
+              onClick={() => onNavigateTab('purchases')}
+              className="bg-black/20 hover:bg-black/30 p-3 rounded-xl border border-white/5 transition-colors cursor-pointer group"
+            >
+              <div className="text-[11px] text-stone-300 font-medium flex items-center justify-between">
+                <span>Payables Due (AP)</span>
+                <ChevronRight className="w-3 h-3 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+              <div className="text-lg sm:text-xl font-black font-mono text-amber-300 mt-1">
+                {new Money(accountingSummary.payablesDueMinor, currency).format()}
+              </div>
+              <div className="text-[10px] text-stone-400 mt-1 font-mono">
+                {accountingSummary.unpaidBillsCount} unpaid purchase bill(s)
+              </div>
+            </div>
+
+            <div
+              onClick={() => onNavigateTab('expenses')}
+              className="bg-black/20 hover:bg-black/30 p-3 rounded-xl border border-white/5 transition-colors cursor-pointer group"
+            >
+              <div className="text-[11px] text-stone-300 font-medium flex items-center justify-between">
+                <span>Expenses (This Month)</span>
+                <ChevronRight className="w-3 h-3 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+              <div className="text-lg sm:text-xl font-black font-mono text-purple-300 mt-1">
+                {new Money(accountingSummary.monthExpensesMinor, currency).format()}
+              </div>
+              <div className="text-[10px] text-stone-400 mt-1 font-mono">
+                {accountingSummary.monthExpensesCount} expense record(s)
+              </div>
+            </div>
+
+            <div
+              onClick={() => onNavigateTab('reports', { reportId: 'profit-and-loss' })}
+              className="bg-black/20 hover:bg-black/30 p-3 rounded-xl border border-white/5 transition-colors cursor-pointer group"
+            >
+              <div className="text-[11px] text-stone-300 font-medium flex items-center justify-between">
+                <span>Formal P&amp;L Report</span>
+                <ChevronRight className="w-3 h-3 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+              <div className="text-sm font-bold text-emerald-300 mt-2 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-emerald-400" />
+                <span>Export &amp; Print</span>
+              </div>
+              <div className="text-[10px] text-stone-400 mt-1 font-sans">
+                Full income statement with CSV &amp; PDF
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CHARTS GRID (Row 1: Line Invoiced vs Received + Funnel/Bar Pipeline) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="dashboard-charts-row-1">

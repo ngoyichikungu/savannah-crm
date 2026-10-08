@@ -65,10 +65,19 @@ export class AuthService {
   }
 
   /**
-   * Save accounts list to localStorage
+   * Save accounts list to storage
    */
-  private static saveAccounts(accounts: User[]): void {
+  static saveAccounts(accounts: User[]): void {
     setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+  }
+
+  /**
+   * Set active session
+   */
+  static setActiveSession(user: User): void {
+    const sessionUser: User = { ...user };
+    delete sessionUser.password;
+    setItem(SESSION_KEY, JSON.stringify(sessionUser));
   }
 
   /**

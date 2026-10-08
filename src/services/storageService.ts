@@ -19,8 +19,16 @@ import {
   PipelineStage,
   Quotation,
   User,
+  Supplier,
+  PurchaseInvoice,
+  BusinessExpense,
 } from '../types';
 import { InvoiceStatusResolver } from './invoiceStatusResolver';
+import {
+  INITIAL_SUPPLIERS,
+  INITIAL_PURCHASE_INVOICES,
+  INITIAL_BUSINESS_EXPENSES,
+} from './accountingData';
 
 const BASE_STORAGE_KEY = 'savannah_crm_db_v1';
 
@@ -76,6 +84,9 @@ export interface AppDatabase {
   leadActivities: LeadActivity[];
   leadStageHistories: LeadStageHistory[];
   calendarEvents: CalendarEvent[];
+  suppliers: Supplier[];
+  purchaseInvoices: PurchaseInvoice[];
+  businessExpenses: BusinessExpense[];
 }
 
 const INITIAL_COMPANIES: Company[] = [
@@ -1427,6 +1438,9 @@ export class StorageService {
           if (!parsed.leadActivities) parsed.leadActivities = INITIAL_LEAD_ACTIVITIES;
           if (!parsed.leadStageHistories) parsed.leadStageHistories = INITIAL_LEAD_STAGE_HISTORIES;
           if (!parsed.calendarEvents) parsed.calendarEvents = INITIAL_CALENDAR_EVENTS;
+          if (!parsed.suppliers) parsed.suppliers = JSON.parse(JSON.stringify(INITIAL_SUPPLIERS));
+          if (!parsed.purchaseInvoices) parsed.purchaseInvoices = JSON.parse(JSON.stringify(INITIAL_PURCHASE_INVOICES));
+          if (!parsed.businessExpenses) parsed.businessExpenses = JSON.parse(JSON.stringify(INITIAL_BUSINESS_EXPENSES));
           
           parsed.invoices = parsed.invoices.map((inv: Invoice) => ({
             ...inv,
@@ -1442,27 +1456,30 @@ export class StorageService {
     }
 
     this.db = {
-      companies: INITIAL_COMPANIES,
+      companies: JSON.parse(JSON.stringify(INITIAL_COMPANIES)),
       currentCompanyId: 'comp_savannah',
-      currentUser: INITIAL_USER,
-      organisations: INITIAL_ORGANISATIONS,
-      contacts: INITIAL_CONTACTS,
-      items: INITIAL_ITEMS,
-      quotations: INITIAL_QUOTATIONS,
-      invoices: INITIAL_INVOICES,
+      currentUser: JSON.parse(JSON.stringify(INITIAL_USER)),
+      organisations: JSON.parse(JSON.stringify(INITIAL_ORGANISATIONS)),
+      contacts: JSON.parse(JSON.stringify(INITIAL_CONTACTS)),
+      items: JSON.parse(JSON.stringify(INITIAL_ITEMS)),
+      quotations: JSON.parse(JSON.stringify(INITIAL_QUOTATIONS)),
+      invoices: JSON.parse(JSON.stringify(INITIAL_INVOICES)),
       creditNotes: [],
-      payments: INITIAL_PAYMENTS,
-      paymentAllocations: INITIAL_ALLOCATIONS,
-      marketingPlans: INITIAL_MARKETING_PLANS,
-      marketingTargets: INITIAL_MARKETING_TARGETS,
-      marketingActivities: INITIAL_MARKETING_ACTIVITIES,
-      activityResults: INITIAL_ACTIVITY_RESULTS,
-      leads: INITIAL_LEADS,
-      pipelines: INITIAL_PIPELINES,
-      pipelineStages: INITIAL_PIPELINE_STAGES,
-      leadActivities: INITIAL_LEAD_ACTIVITIES,
-      leadStageHistories: INITIAL_LEAD_STAGE_HISTORIES,
-      calendarEvents: INITIAL_CALENDAR_EVENTS,
+      payments: JSON.parse(JSON.stringify(INITIAL_PAYMENTS)),
+      paymentAllocations: JSON.parse(JSON.stringify(INITIAL_ALLOCATIONS)),
+      marketingPlans: JSON.parse(JSON.stringify(INITIAL_MARKETING_PLANS)),
+      marketingTargets: JSON.parse(JSON.stringify(INITIAL_MARKETING_TARGETS)),
+      marketingActivities: JSON.parse(JSON.stringify(INITIAL_MARKETING_ACTIVITIES)),
+      activityResults: JSON.parse(JSON.stringify(INITIAL_ACTIVITY_RESULTS)),
+      leads: JSON.parse(JSON.stringify(INITIAL_LEADS)),
+      pipelines: JSON.parse(JSON.stringify(INITIAL_PIPELINES)),
+      pipelineStages: JSON.parse(JSON.stringify(INITIAL_PIPELINE_STAGES)),
+      leadActivities: JSON.parse(JSON.stringify(INITIAL_LEAD_ACTIVITIES)),
+      leadStageHistories: JSON.parse(JSON.stringify(INITIAL_LEAD_STAGE_HISTORIES)),
+      calendarEvents: JSON.parse(JSON.stringify(INITIAL_CALENDAR_EVENTS)),
+      suppliers: JSON.parse(JSON.stringify(INITIAL_SUPPLIERS)),
+      purchaseInvoices: JSON.parse(JSON.stringify(INITIAL_PURCHASE_INVOICES)),
+      businessExpenses: JSON.parse(JSON.stringify(INITIAL_BUSINESS_EXPENSES)),
     };
     this.save();
   }
@@ -1519,7 +1536,7 @@ export class StorageService {
 
   static getCurrentCompany(): Company {
     const db = this.getDb();
-    return db.companies.find((c) => c.id === db.currentCompanyId) || db.companies[0];
+    return db.companies.find((c) => c.id === db.currentCompanyId) || db.companies[0] || ({} as Company);
   }
 
   static getCurrentUser(): User {
@@ -1589,10 +1606,13 @@ export class StorageService {
   }
 
   // Invoices
-  static getInvoices(): Invoice[] {
+  static getInvoices(companyId?: string): Invoice[] {
     const db = this.getDb();
-    const company = this.getCurrentCompany();
-    return db.invoices.filter((inv) => inv.company_id === company.id && !inv.deleted_at);
+    const targetCompanyId = companyId || this.getCurrentCompany()?.id;
+    if (!targetCompanyId) {
+      return (db.invoices || []).filter((inv) => !inv.deleted_at);
+    }
+    return (db.invoices || []).filter((inv) => inv.company_id === targetCompanyId && !inv.deleted_at);
   }
 
   static getInvoiceById(id: string): Invoice | undefined {
@@ -2208,6 +2228,9 @@ export class StorageService {
       leadActivities: [],
       leadStageHistories: [],
       calendarEvents: [],
+      suppliers: [],
+      purchaseInvoices: [],
+      businessExpenses: [],
     };
     this.db = emptyDb;
     this.save();
@@ -2279,5 +2302,98 @@ export class StorageService {
     ];
 
     stages.forEach((s) => this.savePipelineStage(s));
+  }
+
+  // ==========================================
+  // SUPPLIERS
+  // ==========================================
+  static getSuppliers(): Supplier[] {
+    return this.getDb().suppliers || [];
+  }
+
+  static saveSupplier(supplier: Supplier): void {
+    const db = this.getDb();
+    const idx = (db.suppliers || []).findIndex((s) => s.id === supplier.id);
+    if (idx >= 0) {
+      db.suppliers[idx] = supplier;
+    } else {
+      if (!db.suppliers) db.suppliers = [];
+      db.suppliers.push(supplier);
+    }
+    this.save();
+  }
+
+  static deleteSupplier(id: string): boolean {
+    const db = this.getDb();
+    if (!db.suppliers) return false;
+    const initialLen = db.suppliers.length;
+    db.suppliers = db.suppliers.filter((s) => s.id !== id);
+    if (db.suppliers.length !== initialLen) {
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  // ==========================================
+  // PURCHASE INVOICES (BILLS)
+  // ==========================================
+  static getPurchaseInvoices(): PurchaseInvoice[] {
+    return this.getDb().purchaseInvoices || [];
+  }
+
+  static savePurchaseInvoice(invoice: PurchaseInvoice): void {
+    const db = this.getDb();
+    if (!db.purchaseInvoices) db.purchaseInvoices = [];
+    const idx = db.purchaseInvoices.findIndex((p) => p.id === invoice.id);
+    if (idx >= 0) {
+      db.purchaseInvoices[idx] = invoice;
+    } else {
+      db.purchaseInvoices.push(invoice);
+    }
+    this.save();
+  }
+
+  static deletePurchaseInvoice(id: string): boolean {
+    const db = this.getDb();
+    if (!db.purchaseInvoices) return false;
+    const initialLen = db.purchaseInvoices.length;
+    db.purchaseInvoices = db.purchaseInvoices.filter((p) => p.id !== id);
+    if (db.purchaseInvoices.length !== initialLen) {
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  // ==========================================
+  // BUSINESS EXPENSES
+  // ==========================================
+  static getBusinessExpenses(): BusinessExpense[] {
+    return this.getDb().businessExpenses || [];
+  }
+
+  static saveBusinessExpense(expense: BusinessExpense): void {
+    const db = this.getDb();
+    if (!db.businessExpenses) db.businessExpenses = [];
+    const idx = db.businessExpenses.findIndex((e) => e.id === expense.id);
+    if (idx >= 0) {
+      db.businessExpenses[idx] = expense;
+    } else {
+      db.businessExpenses.push(expense);
+    }
+    this.save();
+  }
+
+  static deleteBusinessExpense(id: string): boolean {
+    const db = this.getDb();
+    if (!db.businessExpenses) return false;
+    const initialLen = db.businessExpenses.length;
+    db.businessExpenses = db.businessExpenses.filter((e) => e.id !== id);
+    if (db.businessExpenses.length !== initialLen) {
+      this.save();
+      return true;
+    }
+    return false;
   }
 }

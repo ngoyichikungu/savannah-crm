@@ -25,6 +25,10 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { CalendarView } from './components/calendar/CalendarView';
 import { ReminderBanner } from './components/calendar/ReminderBanner';
 import { OperationsView } from './components/installer/OperationsView';
+import { UserManagementView } from './components/users/UserManagementView';
+import { UserService } from './services/userService';
+import { AccountingView } from './components/accounting/AccountingView';
+import { AccountingService } from './services/accountingService';
 import { CompanySettingsModal } from './components/common/CompanySettingsModal';
 import { SignOutBackupModal } from './components/auth/SignOutBackupModal';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
@@ -443,6 +447,9 @@ export const App: React.FC = () => {
         paymentCount={companyPayments.length}
         marketingPlanCount={StorageService.getMarketingPlans().length}
         calendarEventCount={StorageService.getCalendarEvents({ companyId: currentCompany.id }).length}
+        userCount={UserService.getUsers().length}
+        purchaseInvoiceCount={AccountingService.getPurchaseInvoices({ companyId: currentCompany?.id }).length}
+        expenseCount={AccountingService.getExpenses({ companyId: currentCompany?.id }).length}
       />
 
       {/* Proactive Client Activity Reminder Bar */}
@@ -702,6 +709,39 @@ export const App: React.FC = () => {
         {activeTab === 'operations' && (
           <OperationsView onDataRestored={loadData} />
         )}
+
+        {/* USER MANAGEMENT & ACCESS CONTROL */}
+        {activeTab === 'users' && (
+          <UserManagementView
+            companies={companies}
+            currentUser={currentUser}
+            onUserChanged={loadData}
+            onSwitchSessionUser={(newUser) => {
+              setAuthUser(newUser);
+              loadData();
+            }}
+            showToast={showToast}
+          />
+        )}
+
+        {/* SMALL BUSINESS ACCOUNTING: P&L, PURCHASE INVOICES & EXPENSES */}
+        {(activeTab === 'pnl' ||
+          activeTab === 'purchases' ||
+          activeTab === 'expenses' ||
+          activeTab === 'accounting') && (
+          <AccountingView
+            company={currentCompany}
+            currentUser={currentUser}
+            initialSubTab={
+              activeTab === 'purchases'
+                ? 'purchases'
+                : activeTab === 'expenses'
+                ? 'expenses'
+                : 'pnl'
+            }
+            onDataChanged={loadData}
+          />
+        )}
       </main>
 
       {/* Record Payment Modal */}
@@ -732,6 +772,7 @@ export const App: React.FC = () => {
           isOpen={isCompanySettingsOpen}
           initialMode={companyModalMode}
           onClose={() => setIsCompanySettingsOpen(false)}
+          onOpenUserManagement={() => setActiveTab('users')}
           onSwitchCompany={(id) => {
             StorageService.setCurrentCompany(id);
             setCurrentCompanyId(id);

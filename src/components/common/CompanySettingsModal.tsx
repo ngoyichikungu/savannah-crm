@@ -14,6 +14,7 @@ import {
   Hash,
   Settings,
   AlertTriangle,
+  Users,
 } from 'lucide-react';
 
 interface CompanySettingsModalProps {
@@ -24,6 +25,7 @@ interface CompanySettingsModalProps {
   onSaveCompany: (company: Company, isNew: boolean) => void;
   onSwitchCompany: (companyId: string) => void;
   onDeleteCompany?: (companyId: string) => void;
+  onOpenUserManagement?: () => void;
   initialMode?: 'manage' | 'create' | 'edit';
 }
 
@@ -94,6 +96,7 @@ export const CompanySettingsModal: React.FC<CompanySettingsModalProps> = ({
   onSaveCompany,
   onSwitchCompany,
   onDeleteCompany,
+  onOpenUserManagement,
   initialMode = 'manage',
 }) => {
   const [viewMode, setViewMode] = useState<'manage' | 'create' | 'edit'>(initialMode);
@@ -262,14 +265,31 @@ export const CompanySettingsModal: React.FC<CompanySettingsModalProps> = ({
           </div>
 
           {viewMode === 'manage' && (
-            <button
-              type="button"
-              onClick={handleStartCreateNew}
-              className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              Create New Company / Subsidiary
-            </button>
+            <div className="flex items-center gap-2">
+              {onOpenUserManagement && (
+                <button
+                  type="button"
+                  id="modal-btn-open-user-mgmt"
+                  onClick={() => {
+                    onClose();
+                    onOpenUserManagement();
+                  }}
+                  className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Manage user accounts, roles, access permissions, and passwords"
+                >
+                  <Users className="w-3.5 h-3.5 text-indigo-700" />
+                  <span>Team &amp; Users</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleStartCreateNew}
+                className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Create New Entity
+              </button>
+            </div>
           )}
         </div>
 

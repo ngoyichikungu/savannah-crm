@@ -133,8 +133,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                 PRO
               </span>
             </h1>
-            <p className="text-xs text-stone-500 mt-1 font-mono tracking-wider uppercase font-semibold">
-              Business Operations Privacy Gate
+            <p className="text-xs text-stone-600 mt-1 font-mono tracking-wider uppercase font-extrabold text-emerald-800">
+              Small Business Accounting
             </p>
           </div>
         </div>

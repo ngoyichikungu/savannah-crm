@@ -57,15 +57,22 @@ export interface Company {
   next_receipt_number?: number;
 }
 
+export type UserRole = 'owner' | 'admin' | 'sales_rep' | 'accountant';
+
 export interface User {
   id: string;
   name: string;
   username?: string;
   email: string;
   password?: string;
-  role: 'owner' | 'admin' | 'sales_rep' | 'accountant';
+  role: UserRole;
   company_ids: string[];
   current_company_id: string;
+  status?: 'active' | 'suspended';
+  phone?: string;
+  department?: string;
+  created_at?: string;
+  last_login_at?: string;
 }
 
 export interface Organisation {
@@ -523,3 +530,4 @@ export interface Lead {
 }
 
 export * from './reporting';
+export * from './accounting';

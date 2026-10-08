@@ -95,3 +95,37 @@
    - **Payment Collection Ledger**: Historical cash collected by payment channel.
 3. Use the date range presets (e.g., *This Month*, *This Quarter*, *This Year*).
 4. Click **Export Report PDF** or **Export CSV Data** to download the report.
+
+---
+
+## 9. User Management Facility & Role-Based Access Control (RBAC)
+
+The User Management Facility allows administrators and business owners to manage team member accounts, assign entity access, configure role permissions, and reset security credentials.
+
+### How to Access User Management
+The User Management facility is prominently accessible across multiple entry points:
+1. **Top Navigation Bar**: Click the **Team & Users** button in the top navigation toolbar.
+2. **Module Switcher**: Open the **Module** dropdown menu and select **User Management** under the *System* category.
+3. **User Profile Chip**: Click your logged-in username badge in the top right corner of the header.
+4. **Executive Dashboard**: Click the **Team & Users** action button in the top banner.
+5. **Company Settings Modal**: Click **Team & Users** inside the *Company Management Center*.
+
+### Provisioning New Team Members
+1. In User Management, click **+ Create Team Member**.
+2. Enter the user's **Full Name**, unique **Username**, and corporate **Email Address**.
+3. Specify an **Initial Password** (minimum 4 characters).
+4. Select the appropriate **Role & Permissions Profile**:
+   - **Owner (Executive)**: Unrestricted access to all companies, financials, user accounts, and server operations.
+   - **Admin (Operations)**: Manages team member accounts, CRM pipelines, quotations, invoicing, and clients.
+   - **Accountant (Finance)**: Handles invoices, payments, receipts, credit notes, client account ledgers, and tax reports.
+   - **Sales Representative (Commercial)**: Drafts quotations, manages sales pipeline deals, marketing plans, and meetings.
+5. Check the **Permitted Legal Entities** the user is allowed to access.
+6. (Optional) Provide department and telephone details.
+7. Click **Create User**.
+
+### Managing Existing Accounts & Security
+- **Edit Details**: Update a team member's role, company entity access, email, or department at any time.
+- **Reset Password**: Click the **Key** icon to securely set a new password for any team member.
+- **Suspend / Reactivate**: Click the **Status** icon to temporarily freeze an account without deleting historical data.
+- **Safe Deletion**: Non-owner accounts can be deleted with confirmation. Built-in security guards prevent self-deletion or removing the last active Owner account.
+- **Session Switching**: Click the **Log In / Switch** icon next to any active team member to preview and verify their specific permissions view.
